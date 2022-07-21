@@ -13,17 +13,96 @@ const search = document.querySelector('.search');
 const btn = document.querySelector('.submit');
 const cities = document.querySelectorAll('.city');
 
-let cityInput = 'London';
+let cityInput = 'Porto Alegre';
+
+async function setData() {
+  app.style.opacity = '0';
+
+  const loc = cityInput;
+  const data = await fetchWeather(loc);
+
+  // Main temperature information
+  temp.innerHTML = data.current.temp_c + '&#176;';
+  conditionOutput.innerHTML = data.current.condition.text;
+
+  // Date
+
+
+  const date = data.location.localtime;
+  const y = parseInt(date.substr(0, 4));
+  const m = parseInt(date.substr(5, 2));
+  const d = parseInt(date.substr(8, 2));
+  const time = date.substr(11);
+
+  dateOutput.innerHTML = `${dayOfTheWeek(d, m, y)}, ${d}, ${m} ${y}`;
+  timeOutput.innerHTML = time;
+  nameOutput.innerHTML = data.location.name
+
+  // Panel Output
+  cloudOutput.innerHTML = data.current.cloud + '%';
+  humidityOutput.innerHTML = data.current.humidity + '%';
+  windOutput.innerHTML = data.current.wind_kph + 'km/h';
+
+  // Icon
+  const iconId = data.current.condition.icon.substr('//cdn.weatherapi.com/weather/64x64'.length);
+  icon.src = './src/assets/icons' + iconId;
+
+  // Background and Button
+  function returnCondition(code) {
+    if(code === 1000) return 'clear';
+
+    const conditionCodes = [
+      { title: 'cloudy', codes: [1003, 1006, 1009, 1030, 1069, 1087, 1135, 1273, 1276, 1279, 1282] },
+      { title: 'rainy', codes: [1063, 1069, 1072, 1150, 1153, 1180, 1183, 1186, 1189, 1192, 1195, 1204, 1207, 1240, 1243, 1246, 1249, 1252] }
+    ];
+
+    let result;
+
+    conditionCodes.forEach(condition => {
+      const checkCondition = (item) => {
+        if(item === code) result = condition.title;
+      };
+
+      condition.codes.forEach(item => checkCondition(item));
+    });
+
+    return result;
+  };
+  const timeOfDay = data.timeBasedImages.time;
+  const code = data.timeBasedImages.code;
+  const condition = returnCondition(code);
+  const conditionImage = data.timeBasedImages.skyType[condition].bgImageURL;
+  const buttonColor = data.timeBasedImages.skyType[condition].timeOfDay[timeOfDay].bgColor;
+
+  app.style.backgroundImage = `url(./src/assets/images/${timeOfDay}/${conditionImage})`;
+  btn.style.background = buttonColor;
+
+  
+  app.style.opacity = '1';
+}
 
 cities.forEach(city => {
   city.addEventListener('click', (e) => {
     cityInput = e.target.innerHTML;
-
-    fetchWeatherData();
-
-    app.style.opacity = "0";
+    setData();
   })
 });
+
+function debounce(time = 1000) {
+  let timer;
+
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if(search.value.length === 0) return
+
+      cityInput = search.value;
+      setData();
+    }, time);
+  }
+}
+
+search.addEventListener('keyup', debounce());
 
 form.addEventListener('submit', (e) => {
   if(search.value.length == 0) {
@@ -31,138 +110,12 @@ form.addEventListener('submit', (e) => {
   } else {
     cityInput = search.value;
 
-    fetchWeatherData();
+    setData(cityInput);
 
     search.value = '';
-
-    app.style.opacity = '0';
   }
 
   e.preventDefault();
 });
 
-function dayOfTheWeek(day, month, year) {
-  const weekday = [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday'
-  ];
-
-  return weekday[new Date(`${day}/${month}/${year}`)]
-}
-
-function fetchWeatherData() {
-  fetch(`http://api.weatherapi.com/v1/current.json?key=19e66a9ddfc542c593a130311222007&q=${cityInput}`)
-    .then(response => response.json())
-    .then(data => {
-      
-      console.log(data)
-
-      temp.innerHTML = data.current.temp_c + '&#176;';
-      conditionOutput.innerHTML = data.current.condition.text;
-
-      const date = data.location.localtime;
-      const y = parseInt(date.substr(0, 4));
-      const m = parseInt(date.substr(5, 2));
-      const d = parseInt(date.substr(8, 2));
-      const time = date.substr(11);
-
-      dateOutput.innerHTML = `${dayOfTheWeek(d, m, y)}, ${d}, ${m} ${y}`;
-      timeOutput.innerHTML = time;
-      nameOutput.innerHTML = data.location.name
-      
-      const iconId = data.current.condition.icon.substr('//cdn.weatherapi.com/weather/64x64'.length);
-      icon.src = './src/icons' + iconId;
-
-      cloudOutput.innerHTML = data.current.cloud + '%';
-      humidityOutput.innerHTML = data.current.humidity + '%';
-      windOutput.innerHTML = data.current.wind_kph + 'km/h';
-
-      let timeOfDay = 'day';
-      
-      const code = data.current.condition.code;
-
-      if(!data.current.is_day) timeOfDay = 'night';
-
-      if(code == 1000) {
-        app.style.backgroundImage = `url(./src/images/${timeOfDay}/clear.jpg)`;
-
-        btn.style.background = '#e5ba92';
-        if(timeOfDay == 'night') {
-          btn.style.background = '#181e27';
-        }
-      } else if (
-        code == 1003 ||
-        code == 1006 ||
-        code == 1009 ||
-        code == 1030 ||
-        code == 1069 ||
-        code == 1087 ||
-        code == 1135 ||
-        code == 1273 ||
-        code == 1276 ||
-        code == 1279 ||
-        code == 1282
-      ) {
-        app.style.backgroundImage = `
-        url(./src/images/${timeOfDay}/cloudy.jpg)`;
-        
-        btn.style.background = '#fa6d1b';
-        
-        if(timeOfDay == 'night') {
-          btn.style.background = '#181e27';
-        }
-
-      } else if(
-        code == 1063 ||
-        code == 1069 ||
-        code == 1072 ||
-        code == 1150 ||
-        code == 1153 ||
-        code == 1180 ||
-        code == 1183 ||
-        code == 1186 ||
-        code == 1189 ||
-        code == 1192 ||
-        code == 1195 ||
-        code == 1204 ||
-        code == 1207 ||
-        code == 1240 ||
-        code == 1243 ||
-        code == 1246 ||
-        code == 1249 ||
-        code == 1252
-      ) {
-        app.style.backgroundImage = `url(./src/images/${timeOfDay}/rainy.jpg)`;
-        
-        btn.style.background = '#647d75';
-        
-        if(timeOfDay == 'night') {
-          btn.style.background = '#325c80';
-        }
-
-      } else {
-        app.style.backgroundImage = `url(./images/${timeOfDay}/snowy.jpg)`;
-
-        btn.style.background = '#4d72aa';
-        
-        if(timeOfDay == 'night') {
-          btn.style.background = '#1b1b1b';
-        }
-      }
-
-      app.style.opacity = '1';
-    })
-    .catch(() => {
-      alert('City not found, please try again');
-      app.style.opacity = '1';
-    });
-}
-
-fetchWeatherData();
-
-app.style.opacity = '1';
+setData();
