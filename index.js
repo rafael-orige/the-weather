@@ -1,3 +1,6 @@
+import fetchWeather from "./src/services/fetchWeather.js";
+import dayOfTheWeek from "./src/utils/dayOfTheWeek.js";
+
 const app = document.querySelector('.weather-app');
 const temp = document.querySelector('.temp');
 const dateOutput = document.querySelector('.date');

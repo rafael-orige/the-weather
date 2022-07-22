@@ -1,4 +1,4 @@
-function dayOfTheWeek(day, month, year) {
+export default function dayOfTheWeek(day, month, year) {
   const week = [
     'Sunday',
     'Monday',
