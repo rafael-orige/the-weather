@@ -6,11 +6,11 @@ export default function dayOfTheWeek(day, month, year) {
     'Wednesday',
     'Thursday',
     'Friday',
-    'Saturday'
+    'Saturday',
   ];
 
   const date = new Date(`${year},${month}, ${day}`);
   const weekday = date.getDay();
 
-  return week[weekday]
-};
+  return week[weekday];
+}
